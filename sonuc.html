@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıtlı Kullanıcılar</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="shortcut icon" href="sonuc.png" type="image/x-icon">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        .card {
+            margin-bottom: 15px;
+            border-left: 5px solid #007bff;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        #passwordModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 350px;
+            position: relative;
+        }
+
+        .modal-content h4 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content input {
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background-color: #0056b3;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            display: none;
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        .error-icon {
+            color: red;
+            font-size: 20px;
+            display: none;
+            margin-right: 5px;
+        }
+
+        .show-error {
+            display: flex !important;
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+
+        .error-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+            z-index: 9999;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+
+            to {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
+    <!-- Firebase SDK'ları -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+
+<body>
+    <div id="errorBox" class="error-box">Yanlış Şifre! Lütfen tekrar deneyin.</div>
+
+    <div id="passwordModal">
+        <div class="modal-content">
+            <h4>Güvenli Giriş</h4>
+            <div class="d-flex align-items-center error-container">
+                <span class="error-icon">&#10060;</span>
+                <span class="error-message">Yanlış şifre!</span>
+            </div>
+            <input type="password" id="passwordInput" placeholder="Şifreyi girin">
+            <button onclick="checkPassword()">Giriş Yap</button>
+        </div>
+    </div>
+
+    <div class="container" style="display: none;" id="content">
+        <h2 class="text-center mb-4">Kayıtlı Kullanıcılar</h2>
+        <div id="userList" class="row"></div>
+    </div>
+
+    <script>
+        document.addEventListener("contextmenu", event => event.preventDefault()); // Sağ tıklamayı engelle
+
+document.addEventListener("keydown", function(event) {
+    // Ctrl + U veya Ctrl + Shift + I (Kaynak Kod ve Geliştirici Konsolu)
+    if (
+        (event.ctrlKey && event.key === "u") || 
+        (event.ctrlKey && event.shiftKey && event.key === "I") ||
+        (event.ctrlKey && event.shiftKey && event.key === "J") ||
+        (event.ctrlKey && event.key === "s") || // Ctrl + S (Sayfa Kaydet)
+        (event.ctrlKey && event.key === "p") || // Ctrl + P (Yazdır)
+        (event.key === "F12") // F12 Geliştirici Araçları
+    ) {
+        event.preventDefault();
+    }
+});
+
+
+
+        function checkPassword() {
+            const password = document.getElementById("passwordInput").value;
+
+            fetch("verify.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: "password=" + encodeURIComponent(password),
+            })
+                .then(response => response.text())
+                .then(data => {
+                    if (data === "success") {
+                        document.getElementById("passwordModal").style.display = "none";
+                        document.getElementById("content").style.display = "block";
+                        loadUsers();
+                    } else {
+                        document.getElementById("errorBox").style.display = "block";
+                    }
+                })
+                .catch(error => console.error("Hata:", error));
+        }
+
+
+        function loadUsers() {
+            const firebaseConfig = {
+                apiKey: "AIzaSyC40OaYTKm-oHoLxXRW9TcwEikKMJzEwKk",
+                authDomain: "yenii-prje.firebaseapp.com",
+                databaseURL: "https://yenii-prje-default-rtdb.firebaseio.com",
+                projectId: "yenii-prje",
+                storageBucket: "yenii-prje.firebasestorage.app",
+                messagingSenderId: "152108955871",
+                appId: "1:152108955871:web:4cd8a8decca143896f916a",
+                measurementId: "G-1J2F955YPF"
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+            const usersRef = database.ref('users');
+
+            usersRef.on('value', function (snapshot) {
+                const data = snapshot.val();
+                const userListDiv = document.getElementById('userList');
+                userListDiv.innerHTML = '';
+
+                for (let userKey in data) {
+                    const user = data[userKey];
+                    const mail = user.mail;
+                    const isim = user.isim;
+                    const soyisim = user.soyisim;
+
+                    const userCard = document.createElement('div');
+                    userCard.className = "col-md-6 col-lg-4";
+                    userCard.innerHTML = `
+                        <div class="card p-3">
+                            <div class="card-body">
+                                <h5 class="card-title">${isim} ${soyisim}</h5>
+                                <p class="card-text"><strong>Mail:</strong> ${mail}</p>
+                                <button class="delete-btn" onclick="deleteEmail('${userKey}')">Sil</button>
+                            </div>
+                        </div>
+                    `;
+                    userListDiv.appendChild(userCard);
+                    // setTimeout(() => {
+                    //     userCard.classList.add("user-card");
+                    //     userCard.style.opacity = "1";
+                    //     userCard.style.transform = "translateY(0)";
+                    //     userCard.style.transition = "opacity 2.5s ease-out";
+                    //     userCard.style.transition = "transform 2.5s ease-out";
+
+                    // }, 1000);
+                }
+            });
+        }
+
+        function checkPassword() {
+            const password = document.getElementById("passwordInput").value;
+            const correctPassword = "1234"; // Şifrenizi buraya girin
+            const errorBox = document.getElementById("errorBox");
+
+            if (password === correctPassword) {
+                document.getElementById("passwordModal").style.display = "none";
+                document.getElementById("content").style.display = "block";
+                loadUsers();
+            } else {
+                errorBox.style.display = "block";
+
+                setTimeout(() => {
+                    errorBox.style.animation = "fadeOut 0.5s ease-in-out";
+                    setTimeout(() => {
+                        errorBox.style.display = "none";
+                        errorBox.style.animation = ""; // Animasyonu resetleyerek tekrar çalışmasını sağlıyoruz
+                    }, 500);
+                }, 2000);
+            }
+        }
+
+        function deleteEmail(userKey) {
+            if (confirm("Bu kullanıcıyı silmek istediğinizden emin misiniz?")) {
+                const database = firebase.database();
+                database.ref('users/' + userKey).remove()
+                    .then(() => {
+                        alert("Kullanıcı başarıyla silindi!");
+                        loadUsers(); // Sayfayı güncelle
+                    })
+                    .catch(error => {
+                        // console.error("Silme hatası:", error);
+                        // alert("Bir hata oluştu, tekrar deneyin!");
+                    });
+            }
+        }
+
+    </script>
+</body>
+
+</html>

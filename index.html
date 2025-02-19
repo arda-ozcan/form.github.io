@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mail Kaydet</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Firebase SDK'ları eski sürümde CDN ile ekleyelim -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <!-- Animasyonlar için AOS (Animate On Scroll) -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <!-- Google Fonts (Modern yazı tipleri) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <link rel="shortcut icon" href="index.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #1e3d58;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .form-container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .form-container:hover {
+            transform: translateY(-10px);
+        }
+
+        .form-control {
+            border-radius: 30px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            border-radius: 30px;
+            padding: 12px 20px;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            animation: pulse 1.5s infinite;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+            transform: translateY(-3px);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(0, 123, 255, 0.6);
+            }
+
+            100% {
+                box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+            }
+        }
+
+
+        .img-container img {
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .img-container img:hover {
+            transform: scale(1.05);
+        }
+
+
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+                /* Mobilde sıralamayı düz hale getiriyoruz */
+            }
+
+            .img-container {
+                order: -1;
+                /* Resmi en üste alıyoruz */
+                margin-bottom: 15px;
+                text-align: center;
+            }
+
+            .img-container img {
+                max-width: 100%;
+                max-height: 30vh;
+                /* Resmin fazla yer kaplamasını önlüyoruz */
+                object-fit: contain;
+                /* Görüntünün sıkışmasını önler */
+            }
+
+            .form-container {
+                padding: 1.5rem;
+                max-height: 85vh;
+                /* Formun ekrana sığmasını sağlıyoruz */
+                overflow-y: auto;
+                max-width: 90%;
+                /* Mobilde daha dar form */
+                margin: auto;
+                /* Ortalamak için */
+            }
+
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+            }
+        }
+
+
+        /* Animasyonlar */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-control {
+            border-radius: 30px;
+            padding: 15px;
+            border: 2px solid #ccc;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: transparent;
+            animation: borderAnimation 1.5s linear forwards;
+        }
+
+        @keyframes borderAnimation {
+            0% {
+                box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5) inset;
+            }
+
+            25% {
+                box-shadow: 4px 0 0 2px rgba(0, 123, 255, 0.5) inset;
+            }
+
+            50% {
+                box-shadow: 4px 4px 0 2px rgba(0, 123, 255, 0.5) inset;
+            }
+
+            75% {
+                box-shadow: 0 4px 0 2px rgba(0, 123, 255, 0.5) inset;
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0) inset;
+            }
+        }
+
+        /* Başarı Mesajı */
+        .basari-mesaji {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(40, 167, 69, 0.9);
+            /* Yeşil arka plan */
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 1000;
+        }
+
+        /* Başarı mesajı animasyonu */
+        .basari-mesaji.goster {
+            opacity: 1;
+            animation: yukariCik 0.5s ease-out, kaybol 1.5s ease-in-out 2.5s forwards;
+        }
+
+        /* Check işareti animasyonu */
+        .check-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .check-icon {
+            font-size: 2.5rem;
+            background-color: white;
+            color: #28a745;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: buyume 0.4s ease-out;
+        }
+
+        /* Animasyonlar */
+        @keyframes buyume {
+            from {
+                transform: scale(0.9);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes yukariCik {
+            from {
+                transform: translate(-50%, -30%);
+            }
+
+            to {
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes kaybol {
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="">
+    <div class="container py-5">
+        <h1 data-aos="fade-up">Bilgilerinizi Giriniz</h1>
+        <div class="row align-items-center justify-content-center">
+            <!-- Form Kısmı -->
+            <div class="col-md-7 col-lg-5" data-aos="fade-right">
+                <div class="form-container">
+                    <form id="userForm">
+
+                        <!-- Başarı Mesajı -->
+                        <div id="basariMesaji" class="basari-mesaji d-none">
+                            <div class="check-container">
+                                <div class="check-icon">✔</div>
+                            </div>
+                            <p>Form başarıyla gönderildi!</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="isim" class="form-label">İsim:</label>
+                            <input type="text" id="isim" class="form-control" placeholder="Adınızı girin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="soyisim" class="form-label">Soyisim:</label>
+                            <input type="text" id="soyisim" class="form-control" placeholder="Soyadınızı girin"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mail" class="form-label">Mail:</label>
+                            <input type="email" id="mail" class="form-control" placeholder="Mail adresinizi girin"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" data-aos="zoom-in">Gönder</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Fotoğraf Kısmı -->
+            <div class="col-md-5 col-lg-4 text-center img-container" data-aos="fade-left">
+                <img src="form-wizard-1.jpg" alt="Placeholder Fotoğraf" class="img-fluid">
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase ve AOS scriptleri -->
+    <script>
+        // Firebase'i başlat
+        const firebaseConfig = {
+            apiKey: "AIzaSyC40OaYTKm-oHoLxXRW9TcwEikKMJzEwKk",
+            authDomain: "yenii-prje.firebaseapp.com",
+            databaseURL: "https://yenii-prje-default-rtdb.firebaseio.com",
+            projectId: "yenii-prje",
+            storageBucket: "yenii-prje.firebasestorage.app",
+            messagingSenderId: "152108955871",
+            appId: "1:152108955871:web:4cd8a8decca143896f916a",
+            measurementId: "G-1J2F955YPF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        document.getElementById("userForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const mail = document.getElementById("mail").value;
+            const isim = document.getElementById("isim").value;
+            const soyisim = document.getElementById("soyisim").value;
+
+            if (mail && isim && soyisim) {
+                const safeMail = mail.replace(/\./g, ',');
+
+                const userRef = firebase.database().ref('users/' + safeMail);
+                userRef.set({
+                    mail: mail,
+                    isim: isim,
+                    soyisim: soyisim
+                }).then(() => {
+                    document.getElementById("userForm").reset();
+                }).catch(error => {
+                    alert("Veri kaydedilemedi: " + error.message);
+                });
+            } else {
+                alert("Lütfen tüm alanları doldurun!");
+            }
+        });
+
+
+        document.getElementById("userForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Sayfa yenilenmesini önle
+
+            let basariMesaji = document.getElementById("basariMesaji");
+
+            // Mesajı göster
+            basariMesaji.classList.remove("d-none");
+            basariMesaji.classList.add("goster");
+
+            // 4 saniye sonra mesajı sakla
+            setTimeout(() => {
+                basariMesaji.classList.add("d-none");
+                basariMesaji.classList.remove("goster");
+            }, 4000);
+
+            // Formu temizle
+            this.reset();
+        });
+
+
+        document.addEventListener("contextmenu", event => event.preventDefault()); // Sağ tıklamayı engelle
+
+        document.addEventListener("keydown", function (event) {
+            // Ctrl + U veya Ctrl + Shift + I (Kaynak Kod ve Geliştirici Konsolu)
+            if (
+                (event.ctrlKey && event.key === "u") ||
+                (event.ctrlKey && event.shiftKey && event.key === "I") ||
+                (event.ctrlKey && event.shiftKey && event.key === "J") ||
+                (event.ctrlKey && event.key === "s") || // Ctrl + S (Sayfa Kaydet)
+                (event.ctrlKey && event.key === "p") || // Ctrl + P (Yazdır)
+                (event.key === "F12") // F12 Geliştirici Araçları
+            ) {
+                event.preventDefault();
+            }
+        });
+
+    </script>
+
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
